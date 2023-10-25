@@ -1,59 +1,22 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
 import React from 'react';
-import type {PropsWithChildren} from 'react';
+import type { PropsWithChildren } from 'react';
 import {
   SafeAreaView,
-  ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
   useColorScheme,
-  View,
 } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import HomeScreen from './HomeScreen';
+import InboxScreen from './InboxScreen';
+import ProfileScreen from './ProfileScreen';
+import { FontAwesomeIcon } from '@fortawesome/react-native-fontawesome';
+import { faHome, faInbox, faUser } from '@fortawesome/free-solid-svg-icons';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+const Tab = createBottomTabNavigator();
 
 function App(): JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
@@ -63,34 +26,56 @@ function App(): JSX.Element {
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: backgroundStyle.backgroundColor }}>
       <StatusBar
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={backgroundStyle.backgroundColor}
       />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Lets go">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
+      <NavigationContainer>
+        <Tab.Navigator
+          
+        >
+          <Tab.Screen
+    name="Home"
+    component={HomeScreen}
+    options={{
+      tabBarIcon: ({ focused, color, size }) => (
+        <FontAwesomeIcon
+          icon={faHome}
+          size={size}
+          color={color}
+        />
+      ),
+    }}
+  />
+          <Tab.Screen
+    name="Inbox"
+    component={InboxScreen}
+    options={{
+      tabBarIcon: ({ focused, color, size }) => (
+        <FontAwesomeIcon
+          icon={faInbox}
+          size={size}
+          color={color}
+        />
+      ),
+    }}
+  />
+          <Tab.Screen
+    name="Profile"
+    component={ProfileScreen}
+    options={{
+      tabBarIcon: ({ focused, color, size }) => (
+        <FontAwesomeIcon
+          icon={faUser}
+          size={size}
+          color={color}
+        />
+      ),
+    }}
+  />
+        </Tab.Navigator>
+      </NavigationContainer>
     </SafeAreaView>
   );
 }
