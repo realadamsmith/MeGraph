@@ -1,5 +1,17 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+So for some reason, our Android device login only works when we use which is from our project ./gradlew signingReport
+5E:8F:16:06:2E:A3:CD:2C:4A:0D:54:78:76:BA:A6:F3:8C:AB:F6:25
+
+vs 
+D2:44:8E:F4:11:D1:C4:28:73:30:F4:4C:03:3C:E5:F5:FC:F7:17:DD
+
+https://github.com/react-native-google-signin/google-signin/issues/706#issuecomment-1793112381
+Why the web application Client ID worked for getting the idToken working is beyond me.
+
+
+
+
 # Getting Started
 
 >**Note**: Make sure you have completed the [React Native - Environment Setup](https://reactnative.dev/docs/environment-setup) instructions till "Creating a new application" step, before proceeding.

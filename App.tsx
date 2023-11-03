@@ -1,24 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import type { PropsWithChildren } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-  TouchableOpacity, // Added this import
-} from 'react-native';
-
-import {
-  Colors,
-} from 'react-native/Libraries/NewAppScreen';
-
-import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'; // Added this import
+import React, {useState, useEffect} from 'react';
+import type {PropsWithChildren} from 'react';
+import { SafeAreaView, ScrollView, StatusBar, StyleSheet, Text, useColorScheme, View, TouchableOpacity, } from 'react-native';
+import {Colors} from 'react-native/Libraries/NewAppScreen';
+import { GoogleSignin, statusCodes, } from '@react-native-google-signin/google-signin'; 
 GoogleSignin.configure({
-  scopes: ['https://www.googleapis.com/auth/youtube.readonly'],
-  // webClientId: "358987476906-inarjkrt33i1dfjpgaa4cg32i9182v4d.apps.googleusercontent.com",
+  // scopes: ['https://www.googleapis.com/auth/youtube.readonly'],
+  webClientId: "358987476906-skqqm5usq665sun1gg8tqhhidsvlnnv6.apps.googleusercontent.com",
   // offlineAccess: true
 });
 type SectionProps = PropsWithChildren<{
@@ -37,29 +24,21 @@ function App(): JSX.Element {
 
   const handleGoogleLogin = async () => {
     try {
-      // Initialize Google Sign-In
-
       await GoogleSignin.hasPlayServices();
       const user = await GoogleSignin.signIn();
       console.log('Google Sign-In Success', user);
-      // You can add your own logic here after successful login.
       setUserLoggedIn(true);
-      setUserInfo("User", user);
+      setUserInfo('User', user);
 
-      const currentUser = GoogleSignin.getTokens().then((res)=>{
-        console.log("res.accessToken", res.accessToken );
-      console.log("currentUser", currentUser)
-});
+      const currentUser = GoogleSignin.getTokens().then(res => {
+        // console.log('res.accessToken', res.accessToken);
+        console.log('currentUser', currentUser);
+      });
     } catch (error) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('Google Sign-In Cancelled');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Google Sign-In is in progress');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.log('Play Services not available');
-      } else {
-        console.log('Error with Google Sign-In', error);
-      }
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) { console.log('Google Sign-In Cancelled');
+      } else if (error.code === statusCodes.IN_PROGRESS) { console.log('Google Sign-In is in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) { console.log('Play Services not available');
+      } else { console.log('Error with Google Sign-In', error); }
     }
   };
 
@@ -71,14 +50,22 @@ function App(): JSX.Element {
     // You can add your own logout logic here.
   };
 
+  // const youtubeUserData = async () => {
+  //   https://youtube.googleapis.com/youtube/v3/videos?part=snippet%2CcontentDetails%2Cstatistics&myRating=like&key=[YOUR_API_KEY] HTTP/1.1
+
+  //   Authorization: Bearer [YOUR_ACCESS_TOKEN]
+  //   Accept: application/json
+
+  // }
+
   useEffect(() => {
     // Check the user's login status and info when the component mounts.
-    GoogleSignin.isSignedIn().then((isSignedIn) => {
+    GoogleSignin.isSignedIn().then(isSignedIn => {
       setUserLoggedIn(isSignedIn);
       if (isSignedIn) {
-        GoogleSignin.getCurrentUser().then((user) => {
+        GoogleSignin.getCurrentUser().then(user => {
           setUserInfo(user);
-          console.log("effect user", user)
+          console.log('effect user', user);
         });
       }
     });
@@ -86,49 +73,29 @@ function App(): JSX.Element {
 
   return (
     <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={backgroundStyle.backgroundColor} />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" style={backgroundStyle}>
+        <View style={{ backgroundColor: isDarkMode ? Colors.black : Colors.white, }}>
           <TouchableOpacity
-            onPress={isUserLoggedIn ? handleLogout : handleGoogleLogin}
-          >
+            onPress={isUserLoggedIn ? handleLogout : handleGoogleLogin}>
             <View style={styles.buttonContainer}>
               <Text style={styles.buttonText}>
                 {isUserLoggedIn ? 'Logout' : 'Google Login'}
               </Text>
             </View>
           </TouchableOpacity>
-          {isUserLoggedIn && userInfo && (
-  <View style={styles.userInfoContainer}>
-    <Text style={styles.userInfoText}>User Information:</Text>
-    {(() => {
-      const user = userInfo.user;
-      const userInfoElements = [];
-
-      for (const key in user) {
-        if (user.hasOwnProperty(key)) {
-          userInfoElements.push(
-            <Text key={key}>
-              {key}: {user[key] || 'N/A'}
-            </Text>
-          );
-        }
-      }
-
-      return userInfoElements;
-    })()}
-  </View>
-)}
-
+          {isUserLoggedIn && (
+            <View style={styles.userInfoContainer}>
+              <Text style={styles.userInfoText}>User Information:</Text>
+              {Object.entries(userInfo?.user || {}).map(([key, value]) => (
+                <Text key={key}>
+                  {key}: {value !== null ? value : 'null'}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
+        <Text>{JSON.stringify(userInfo)}</Text>
       </ScrollView>
     </SafeAreaView>
   );
