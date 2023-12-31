@@ -1,118 +1,123 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+// App.tsx
+import React, {useState, useEffect} from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import {createStackNavigator} from '@react-navigation/stack';
+import {GoogleSignin} from '@react-native-google-signin/google-signin';
+import {View, Text} from 'react-native';
+import IntroScreen from './components/IntroScreen';
+// TabNavigator.tsx
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import HomeScreen from './components/HomeScreen'; // Create HomeScreen, MessagesScreen, and ProfileScreen components
+import MessagesScreen from './components/MessagesScreen';
+import ProfileScreen from './components/ProfileScreen';
+import {FontAwesomeIcon} from '@fortawesome/react-native-fontawesome';
+import {faHome, faInbox, faUser} from '@fortawesome/free-solid-svg-icons';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+GoogleSignin.configure({
+  scopes: ['https://www.googleapis.com/auth/youtube.readonly'],
+  webClientId:
+    '358987476906-skqqm5usq665sun1gg8tqhhidsvlnnv6.apps.googleusercontent.com',
+  // offlineAccess: true
+});
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const TabNavigator = ({onSignOut}) => {
   return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: 'tomato',
+        tabBarInactiveTintColor: 'black',
+        tabBarStyle: [
           {
-            color: isDarkMode ? Colors.white : Colors.black,
+            display: 'flex',
           },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
+          null,
+        ],
+      }}>
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          headerShown: false,
+          tabBarIcon: ({focused, color, size}) => (
+            <FontAwesomeIcon icon={faHome} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Messages"
+        component={MessagesScreen}
+        options={{
+          headerShown: false,
+          tabBarBadge: 3,
+          tabBarIcon: ({focused, color, size}) => (
+            <FontAwesomeIcon icon={faInbox} size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({focused, color, size}) => (
+            <FontAwesomeIcon icon={faUser} size={size} color={color} />
+          ),
+        }}>
+        {() => <ProfileScreen onSignOut={onSignOut} />}
+      </Tab.Screen>
+    </Tab.Navigator>
   );
-}
+};
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+const App = () => {
+  const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  useEffect(() => {
+    const checkSignInStatus = async () => {
+      // Check if the user is signed in
+      const signedIn = await GoogleSignin.isSignedIn();
+      setIsSignedIn(signedIn);
+    };
+    checkSignInStatus();
+  }, [GoogleSignin.isSignedIn()]);
+
+  const onSignIn = () => {
+    setIsSignedIn(true); // Update the state when the user signs in
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+  const onSignOut = () => {
+    setIsSignedIn(false); // Update the state when the user signs out
+  };
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+  if (isSignedIn === null) {
+    return (
+      <View>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator>
+        {isSignedIn ? (
+          <Stack.Screen name="Main" options={{ headerShown: false }}>
+            {() => <TabNavigator onSignOut={onSignOut} />}
+          </Stack.Screen>
+        ) : (
+          <Stack.Screen
+            name="Intro"
+            component={IntroScreen}
+            options={{headerShown: false}}
+            initialParams={{onSignIn}} // Pass the callback as a prop
+          />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+};
 
 export default App;

@@ -21,6 +21,10 @@ DerivedData
 *.ipa
 *.xcuserstate
 ios/.xcode.env.local
+.env
+app.json
+babel.config.js
+react-native.config.js
 
 # Android/IntelliJ
 #
