@@ -8,13 +8,9 @@ const HomeScreen = () => {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      await fetchData();
-    };
-
-    fetchInitialData();
-  }, []);
-
+    fetchData(); // Fetch initial data when the component mounts
+  }, []); // Empty dependency array to run only once
+  
   const fetchData = async () => {
     if (loading) return;
     setLoading(true);
@@ -23,12 +19,16 @@ const HomeScreen = () => {
       const response = await fetch(`http://192.168.1.149:5000/homeFeed?page=${page}`);
       const newData = await response.json();
       
-      setData(prevData => [...prevData, ...newData.data]);
-      setLoading(false);
+      if (newData.data && newData.data.length > 0) {
+        setData(prevData => [...prevData, ...newData.data]);
+        setPage(prevPage => prevPage + 1); // Increment page for next request
+      }
 
       if (!newData.isMore) {
-        // Disable further requests if no more data is available
-        setLoading(true);
+        // No more data to load
+        setLoading(true); // This should likely be setLoading(false)
+      } else {
+        setLoading(false); // There might be more data to load
       }
     } catch (error) {
       console.error(error);
@@ -37,8 +37,11 @@ const HomeScreen = () => {
   };
 
   const loadMore = () => {
-    setPage(prevPage => prevPage + 1);
+    if (!loading) {
+      fetchData();
+    }
   };
+
 
   useEffect(() => {
     if (page > 1) {

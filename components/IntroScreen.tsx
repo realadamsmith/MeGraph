@@ -29,6 +29,20 @@ const IntroScreen = ({route}) => {
         // console.log(`videos ${index}:`, item.contentDetails.videoId);
         // });
         if (userData && result.items) {
+          const youtubeDataWithTimestamp = result.items.map(item => ({
+            ...item, // Spread operator to include all existing fields from the item
+            likedAt: new Date().toISOString() // Add the likedAt field with the current timestamp
+          }));
+          try {
+            await fetch('http://192.168.1.149:5000/storeYoutubeData', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: userData, youtubeData: youtubeDataWithTimestamp })
+          });
+          } catch (error) {
+            console.log("user upload error", error)
+          }
+  
           const likesData = result.items.map(item => ({
             userId: userData.user.id,
             userName: userData.user.name, // Include user's name
@@ -37,10 +51,9 @@ const IntroScreen = ({route}) => {
               videoId: item.contentDetails.videoId,
               title: item.snippet.title,
               // ... other video details you wish to store
-            }
-            // likedAt: new Date().toISOString() // Current timestamp, if needed
+            },
+            likedAt: new Date().toISOString() 
           }));
-  
           await fetch('http://192.168.1.149:5000/storeLikes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

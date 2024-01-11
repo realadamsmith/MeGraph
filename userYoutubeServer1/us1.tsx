@@ -1,13 +1,13 @@
 // us1.tsx
 const {MongoClient, ServerApiVersion} = require('mongodb');
-const uri =
-  'mongodb+srv://Errinwright:dxQNvyjjVj39ofYY@useryoutubecluster.lm2n1t9.mongodb.net/?retryWrites=true&w=majority';
 const express = require('express');
 const bodyParser = require('body-parser');
 
 const app = express();
 require('dotenv').config();
 app.use(bodyParser.json());
+
+const uri = process.env.MongoURI;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -30,23 +30,12 @@ app.post('/test', async (req, res) => {
   }
 });
 
-app.post('/getYoutubeData', async (req, res) => {
-  
-  try {
-    res.status(200).json({message: 'Test data received successfully'});
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({error: error.message});
-  }
-});
-
 app.post('/storeYoutubeData', async (req, res) => {
   const {user, youtubeData} = req.body; 
   let collection;
   await client.connect();
   const db = client.db('userData');
   collection = db.collection('user');
-
   if (!collection) {
     res.status(500).json({error: 'DB connection not established'});
     return;
@@ -71,9 +60,9 @@ app.post('/storeYoutubeData', async (req, res) => {
 app.post('/storeLikes', async (req, res) => {
   try {
     const likesData = req.body.likes; // Assuming likes is an array of video data
+    await client.connect();
     const database = client.db('userData'); 
     const collection = database.collection('likesCollection'); 
-    console.log('Received likesData:', likesData); // Log the likesData
 
     // Create bulk operations
     const bulkOps = likesData.map(likeData => {
@@ -88,7 +77,6 @@ app.post('/storeLikes', async (req, res) => {
         }
       };
     });
-
     await collection.bulkWrite(bulkOps);
     res.status(200).json({ message: 'Likes stored/updated successfully' });
   } catch (error) {
@@ -104,14 +92,13 @@ app.get('/homeFeed', async (req, res) => {
 
   try {
     await client.connect();
-    const database = client.db('userData'); // Replace with your actual database name
-    const collection = database.collection('likesCollection'); // Retrieving data from 'likesCollection'
-
+    const database = client.db('userData'); 
+    const collection = database.collection('likesCollection'); 
     const data = await collection.find({})
+                                 .sort({ likedAt: -1 })
                                  .skip(skip)
                                  .limit(limit)
                                  .toArray();
-
     // Check if there is more data to send for the next page
     const totalCount = await collection.countDocuments();
     const isMore = skip + data.length < totalCount;
@@ -120,8 +107,6 @@ app.get('/homeFeed', async (req, res) => {
   } catch (error) {
     console.error('Error retrieving data:', error);
     res.status(500).json({ error: error.message });
-  } finally {
-    await client.close();
   }
 });
 
