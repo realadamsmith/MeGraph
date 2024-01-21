@@ -1,47 +1,61 @@
-import { FlatList, Text, View, ActivityIndicator, StyleSheet, Image } from 'react-native';
-import React, { useState, useEffect } from 'react';
+import { FlatList, Text, View, ActivityIndicator, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
 import { WebView } from 'react-native-webview';
+const youtubeinstance = "http://18.217.174.213:5000";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const HomeScreen = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const lastUser = useRef(null);
+  const lastUserStyle = useRef('odd');
+  const [likedPosts, setLikedPosts] = useState(new Set());
 
   useEffect(() => {
-    fetchData(); // Fetch initial data when the component mounts
-  }, []); // Empty dependency array to run only once
+    fetchData(); 
+  }, []);
   
   const fetchData = async () => {
     if (loading) return;
     setLoading(true);
-
+  
     try {
-      const response = await fetch(`http://192.168.1.149:5000/homeFeed?page=${page}`);
+      const response = await fetch(`${youtubeinstance}/homeFeed?page=${page}`);
       const newData = await response.json();
-      
-      if (newData.data && newData.data.length > 0) {
-        setData(prevData => [...prevData, ...newData.data]);
-        setPage(prevPage => prevPage + 1); // Increment page for next request
-      }
-
-      if (!newData.isMore) {
-        // No more data to load
-        setLoading(true); // This should likely be setLoading(false)
-      } else {
-        setLoading(false); // There might be more data to load
+  
+      const processedData = newData.data.map((item) => {
+        let userChanged = false;
+        if (!lastUser.current || lastUser.current !== item.userName) {
+          userChanged = true;
+          lastUser.current = item.userName;
+          lastUserStyle.current = lastUserStyle.current === 'even' ? 'odd' : 'even';
+        }
+  
+        return {
+          ...item,
+          userRowStyle: lastUserStyle.current === 'even' ? styles.userRowEven : styles.userRowOdd,
+          detailStyle: lastUserStyle.current === 'even' ? styles.detailEven : styles.detailOdd,
+          isLiked: item.isLikedByCurrentUser,  // Add like status to each item
+        };
+      });
+  
+      if (processedData && processedData.length > 0) {
+        setData(prevData => [...prevData, ...processedData]);
+        setPage(prevPage => prevPage + 1);
       }
     } catch (error) {
       console.error(error);
+    } finally {
       setLoading(false);
     }
   };
-
+  
   const loadMore = () => {
     if (!loading) {
       fetchData();
     }
   };
-
 
   useEffect(() => {
     if (page > 1) {
@@ -59,22 +73,70 @@ const HomeScreen = () => {
     );
   };
 
-  const renderItem = ({ item, index }) => {
-    const isEven = index % 2 === 0;
-    const userRowStyle = isEven ? styles.userRowEven : styles.userRowOdd;
+  const likePost = async (videoId) => {
+    try {
+      const response = await fetch(`${youtubeinstance}/likePost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: 'yourUserId', // Replace with actual user ID
+          videoId,
+        }),
+      });
+      const data = await response.json();
+      console.log(data);
+      if (data.message === 'Successfully liked the post') {
+        // Optimistically update the UI
+        setData(prevData =>
+          prevData.map(item =>
+            item.video.videoId === videoId
+              ? { ...item, isLiked: true, likeCount: item.likeCount + 1 } 
+              : item
+          )
+        );
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
   
-    // Check if user data is available
+
+  const commentPost = async (videoId, comment) => {
+    try {
+      const response = await fetch(`${youtubeinstance}/commentPost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: 'yourUserId', // Replace with actual user ID
+          videoId,
+          comment,
+        }),
+      });
+      const data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const renderItem = ({ item }) => {
     const hasUserData = item.userName && item.userPhoto;
-  
+    console.log("likedposts", likedPosts)
+    const isLiked = likedPosts.has(item.video.videoId); // Check if the post is liked
+
     return (
       <View style={styles.item}>
         {hasUserData && (
-          <View style={userRowStyle}>
+          <View style={item.userRowStyle}>
             <Image
               source={{ uri: item.userPhoto || 'default_photo_url_here' }}
               style={styles.userPhoto}
             />
-            <Text style={styles.detail}>{item.userName || 'Anonymous'}</Text>
+            <Text style={item.detailStyle}>{item.userName || 'Anonymous'}</Text>
           </View>
         )}
         <View style={styles.youtubeDataRow}>
@@ -90,11 +152,21 @@ const HomeScreen = () => {
           <Text style={styles.videoId}>
             Title: {item.video.title}
           </Text>
+          <TouchableOpacity onPress={() => likePost(item.video.videoId)} style={[styles.likeButton, isLiked ? styles.liked : {}]} // Apply liked style if the post is liked
+          >
+          <Text style={{ color: 'white' }}>{isLiked ? 'Liked' : 'Like'}</Text>
+
+          </TouchableOpacity>
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Write a comment..."
+            onSubmitEditing={({ nativeEvent: { text } }) => commentPost(item.video.videoId, text)}
+          />
         </View>
       </View>
     );
   };
-
+  
   return (
     <View style={styles.container}>
       <FlatList
@@ -108,7 +180,6 @@ const HomeScreen = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -130,10 +201,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
   },
-  detail: {
+  detailEven: {
     fontSize: 16,
     color: 'gray',
-    marginLeft: 10, // Space between image and text
+    marginLeft: 10, // Space between image and text for even rows
+  },
+  detailOdd: {
+    fontSize: 16,
+    color: 'gray',
+    marginRight: 10, // Space between image and text for odd rows
   },
   youtubeDataRow: {
     flex: 1,
@@ -149,13 +225,46 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   userPhoto: {
-    width: 35,
-    height: 35,
+    width: 33,
+    height: 33,
     borderRadius: 25,
   },
   loader: {
     marginVertical: 20,
     alignItems: 'center',
+  },
+  likeButton: {
+    padding: 10,
+    backgroundColor: '#4CAF50',
+    borderRadius: 5,
+    marginTop: 10,
+    // flexDirection: 'row', // Align icon and text horizontally
+    // alignItems: 'center', // Center items vertically
+    // justifyContent: 'center', // Center items horizontally
+  },
+  liked: {
+    backgroundColor: 'red', // Change color to red when liked
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    paddingLeft: 14,
+    borderRadius: 5,
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  commentButton: {
+    padding: 10,
+    backgroundColor: '#2196F3', // Blue background
+    color: 'white',
+    textAlign: 'center',
+    borderRadius: 5,
+    marginTop: 5,
   },
 });
 

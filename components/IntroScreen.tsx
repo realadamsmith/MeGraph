@@ -3,6 +3,7 @@
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import GoogleLogin from './GoogleLogin';
+const youtubeinstance = "http://18.217.174.213:5000";
 
 const IntroScreen = ({route}) => {
   const [accessToken, setAccessToken] = useState(null); // New state
@@ -34,7 +35,7 @@ const IntroScreen = ({route}) => {
             likedAt: new Date().toISOString() // Add the likedAt field with the current timestamp
           }));
           try {
-            await fetch('http://192.168.1.149:5000/storeYoutubeData', {
+            await fetch(`${youtubeinstance}/storeYoutubeData`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user: userData, youtubeData: youtubeDataWithTimestamp })
@@ -54,7 +55,7 @@ const IntroScreen = ({route}) => {
             },
             likedAt: new Date().toISOString() 
           }));
-          await fetch('http://192.168.1.149:5000/storeLikes', {
+          await fetch(`${youtubeinstance}/storeLikes`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ likes: likesData })
