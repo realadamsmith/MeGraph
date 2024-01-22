@@ -1,7 +1,16 @@
-import { FlatList, Text, View, ActivityIndicator, StyleSheet, Image, TouchableOpacity, TextInput } from 'react-native';
-import React, { useState, useEffect, useRef } from 'react';
-import { WebView } from 'react-native-webview';
-const youtubeinstance = "http://18.217.174.213:5000";
+import {
+  FlatList,
+  Text,
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
+import React, {useState, useEffect, useRef, memo} from 'react';
+import {WebView} from 'react-native-webview';
+const youtubeinstance = 'http://18.217.174.213:5000';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 const HomeScreen = () => {
@@ -10,36 +19,41 @@ const HomeScreen = () => {
   const [page, setPage] = useState(1);
   const lastUser = useRef(null);
   const lastUserStyle = useRef('odd');
-  const [likedPosts, setLikedPosts] = useState(new Set());
 
   useEffect(() => {
-    fetchData(); 
+    fetchData();
   }, []);
-  
+
   const fetchData = async () => {
     if (loading) return;
     setLoading(true);
-  
+
     try {
       const response = await fetch(`${youtubeinstance}/homeFeed?page=${page}`);
       const newData = await response.json();
-  
-      const processedData = newData.data.map((item) => {
+
+      const processedData = newData.data.map(item => {
         let userChanged = false;
         if (!lastUser.current || lastUser.current !== item.userName) {
           userChanged = true;
           lastUser.current = item.userName;
-          lastUserStyle.current = lastUserStyle.current === 'even' ? 'odd' : 'even';
+          lastUserStyle.current =
+            lastUserStyle.current === 'even' ? 'odd' : 'even';
         }
-  
+
         return {
           ...item,
-          userRowStyle: lastUserStyle.current === 'even' ? styles.userRowEven : styles.userRowOdd,
-          detailStyle: lastUserStyle.current === 'even' ? styles.detailEven : styles.detailOdd,
-          isLiked: item.isLikedByCurrentUser,  // Add like status to each item
+          userRowStyle:
+            lastUserStyle.current === 'even'
+              ? styles.userRowEven
+              : styles.userRowOdd,
+          detailStyle:
+            lastUserStyle.current === 'even'
+              ? styles.detailEven
+              : styles.detailOdd,
         };
       });
-  
+
       if (processedData && processedData.length > 0) {
         setData(prevData => [...prevData, ...processedData]);
         setPage(prevPage => prevPage + 1);
@@ -47,10 +61,10 @@ const HomeScreen = () => {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Ensure loading is set to false in all cases
     }
   };
-  
+
   const loadMore = () => {
     if (!loading) {
       fetchData();
@@ -65,7 +79,6 @@ const HomeScreen = () => {
 
   const renderFooter = () => {
     if (!loading) return null;
-
     return (
       <View style={styles.loader}>
         <ActivityIndicator size="large" />
@@ -73,7 +86,7 @@ const HomeScreen = () => {
     );
   };
 
-  const likePost = async (videoId) => {
+  const likePost = async videoId => {
     try {
       const response = await fetch(`${youtubeinstance}/likePost`, {
         method: 'POST',
@@ -87,21 +100,10 @@ const HomeScreen = () => {
       });
       const data = await response.json();
       console.log(data);
-      if (data.message === 'Successfully liked the post') {
-        // Optimistically update the UI
-        setData(prevData =>
-          prevData.map(item =>
-            item.video.videoId === videoId
-              ? { ...item, isLiked: true, likeCount: item.likeCount + 1 } 
-              : item
-          )
-        );
-      }
     } catch (error) {
       console.error(error);
     }
   };
-  
 
   const commentPost = async (videoId, comment) => {
     try {
@@ -122,18 +124,20 @@ const HomeScreen = () => {
       console.error(error);
     }
   };
+  console.log('fetch');
 
-  const renderItem = ({ item }) => {
+  const RenderItem = ({item}) => {
+    if (!item.video) {
+      return null;
+    }
     const hasUserData = item.userName && item.userPhoto;
-    console.log("likedposts", likedPosts)
-    const isLiked = likedPosts.has(item.video.videoId); // Check if the post is liked
-
+    console.log('2');
     return (
       <View style={styles.item}>
         {hasUserData && (
           <View style={item.userRowStyle}>
             <Image
-              source={{ uri: item.userPhoto || 'default_photo_url_here' }}
+              source={{uri: item.userPhoto || 'default_photo_url_here'}}
               style={styles.userPhoto}
             />
             <Text style={item.detailStyle}>{item.userName || 'Anonymous'}</Text>
@@ -143,39 +147,48 @@ const HomeScreen = () => {
           <View style={styles.videoContainer}>
             <WebView
               style={styles.video}
-              source={{ uri: `https://www.youtube.com/embed/${item.video.videoId}` }}
+              source={{
+                uri: `https://www.youtube.com/embed/${item.video.videoId}`,
+              }}
               javaScriptEnabled={true}
               domStorageEnabled={true}
               startInLoadingState={true}
+              shouldStartLoadWithRequest={(request) => {
+                return request.url === 'https://www.youtube.com/embed/';
+              }}
             />
           </View>
-          <Text style={styles.videoId}>
-            Title: {item.video.title}
-          </Text>
-          <TouchableOpacity onPress={() => likePost(item.video.videoId)} style={[styles.likeButton, isLiked ? styles.liked : {}]} // Apply liked style if the post is liked
+          <Text style={styles.videoId}>Title: {item.video.title}</Text>
+          <TouchableOpacity
+            onPress={() => likePost(item.video.videoId)}
+            style={[styles.likeButton]} // Apply liked style if the post is liked
           >
-          <Text style={{ color: 'white' }}>{isLiked ? 'Liked' : 'Like'}</Text>
-
+            <Text style={{color: 'white'}}>Like</Text>
           </TouchableOpacity>
           <TextInput
             style={styles.commentInput}
             placeholder="Write a comment..."
-            onSubmitEditing={({ nativeEvent: { text } }) => commentPost(item.video.videoId, text)}
+            onSubmitEditing={({nativeEvent: {text}}) =>
+              commentPost(item.video.videoId, text)
+            }
           />
         </View>
       </View>
     );
   };
-  
+  const MemoizedRenderItem = memo(RenderItem, (prevProps, nextProps) => {
+    return prevProps.item.video.videoId === nextProps.item.video.videoId;
+  });
   return (
     <View style={styles.container}>
       <FlatList
         data={data}
-        renderItem={renderItem}
+        renderItem={RenderItem}
         keyExtractor={(item, index) => `${item.userId}-${index}`}
         ListFooterComponent={renderFooter}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
+        
       />
     </View>
   );
